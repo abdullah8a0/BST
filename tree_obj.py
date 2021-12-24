@@ -76,17 +76,28 @@ class Tree:
         return isinstance(node.L,Cap) and isinstance(node.R,Cap)
 
 
-    def draw(self):
+    def draw(self,key_only = True):
         layer : List[BinaryNode] = [self.root]
+        seen = []
         while layer:
-            print([n.info for n in layer if n is not None])
+            print([n if n=="*" else (n.info[0] if key_only else n.info) for n in layer if n not in {None}])
             new_layer = []
             for n in layer:
+                if n=="*":
+                    continue
                 if not isinstance(n.L,Cap):
                     new_layer.append(n.L)
+                else:
+                    new_layer.append("*")
                 if not isinstance(n.R,Cap):
                     new_layer.append(n.R)
+                else:
+                    new_layer.append("*")
+                if n in seen:
+                    input(f"the node {n.info} is already drawn, we have a loop")
+            seen.extend(layer)
             layer = new_layer
+        print("\n")
 
 
 
@@ -101,10 +112,12 @@ class ParentedBinaryNode(BinaryNode):
             self.parent = parent
     def setl(self,node):
         self.L = node
-        self.setparent(self.L, self)
+        if not isinstance(node,Cap):
+            node.setparent(self)
     def setr(self,node):
         self.R = node
-        self.setparent(self.R, self)
+        if not isinstance(node,Cap):
+            node.setparent(self)
 
     
     def rotateL(self):
@@ -153,6 +166,15 @@ class ParentTree(Tree):
     def replace(self,new_node:ParentedBinaryNode,old_node:ParentedBinaryNode):
         new_node.setl(old_node.L)
         new_node.setr(old_node.R)
+        new_node.setparent(old_node.parent)
+        if isinstance(new_node.parent ,Cap):
+            self.root = new_node
+            return
+        if old_node == old_node.parent.L:
+            old_node.parent.L = new_node
+        elif old_node == old_node.parent.R:
+            old_node.parent.R = new_node
+    def replace_subtree(self,new_node:ParentedBinaryNode,old_node:ParentedBinaryNode):
         new_node.setparent(old_node.parent)
         if isinstance(new_node.parent ,Cap):
             self.root = new_node
@@ -291,29 +313,46 @@ class BST(ParentTree):
         
         l,r = isinstance(node.L,Cap), isinstance(node.R,Cap) 
         if self.isleaf(node):
-            self.replace(Cap(),node)
+            self.replace_subtree(Cap(),node)
         elif l and not r:
-            self.replace(node.R,node)
+            self.replace_subtree(node.R,node)
         elif r and not l:
-            self.replace(node.L,node)
+            self.replace_subtree(node.L,node)
         else:
             succ = self.succ(node)
             if succ.parent != node:
-                self.replace(succ.R,succ)
+                self.replace_subtree(succ.R,succ)
                 succ.setr(node.R)
-            self.replace(node,succ)
+            self.replace_subtree(node,succ)
             succ.setl(node.L)
 
 
 if __name__ == '__main__':
+    tree = BST([(0,0)])
+    tree.draw()
+    tree.insert((1,1))
+    tree.draw()
+    tree.insert((2,2))
+    tree.draw()
+    tree.insert((4,4))
+    tree.insert((3,3))
+    tree.insert((5,5))
+    tree.draw()
+    tree.delete(2)
+    tree.draw()
 
+
+
+    exit()
     tree = BalParTree(ParentedBinaryNode,[1,2,3,4,5,6,7])
     tree.draw()
     tree.rotateL(tree.root)
     tree.draw()
     tree.rotateR(tree.root)
     tree.draw()
+
     
+
     print('pre',[node.info for node in tree.traverse_pre()])
     print('post',[node.info for node in tree.traverse_post()])
     print('in',[node.info for node in tree.traverse_in()])

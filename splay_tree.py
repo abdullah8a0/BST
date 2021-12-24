@@ -1,4 +1,4 @@
-from tree_obj import BST
+from tree_obj import BST, Cap
 import tree_obj
 
 
@@ -11,8 +11,8 @@ class SplayTree(BST):
         node = super().insert(token)
         self.splay(node)
 
-    def zigzig(self,node:tree_obj.ParentedBinaryNode,parent:tree_obj.ParentedBinaryNode):
-        assert node.parent is parent
+    def zigzig(self,node:tree_obj.ParentedBinaryNode):
+        parent = node.parent
         assert parent is not self.root
         if parent.L is node:
             assert parent.parent.L is parent
@@ -40,6 +40,18 @@ class SplayTree(BST):
         else:
             assert parent.parent.R is parent
             A,B,C,D = node.R,node.L,parent.L,parent.parent.L
+            parent = node.parent
+            gparent = parent.parent
+            invnode = gparent.parent
+            gparent.setr(C)
+            parent.setl(gparent)
+            parent.setr(B)
+            node.setl(parent)
+            node.setparent(invnode)
+            if isinstance(node.parent,Cap):
+                self.root = node
+            
+            return
             # set parents
             tree_obj.ParentedBinaryNode.setparent(B,parent)
             tree_obj.ParentedBinaryNode.setparent(C,parent.parent)
@@ -69,6 +81,8 @@ class SplayTree(BST):
         pass
 
 if __name__ == '__main__':
-    vals = [1,2,4,3,5,6,7]
+    vals = [1,2,3,4,5,6,7]
     tree = SplayTree(list(zip(vals,vals)))
+    tree.draw()
+    tree.zigzig(tree.root.R.R)
     tree.draw()
