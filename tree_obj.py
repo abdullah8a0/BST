@@ -71,7 +71,9 @@ class Tree:
     def traverse_in(self):
         yield from self.root.traverse_in()
         
-
+    @staticmethod
+    def isleaf(node:BinaryNode):
+        return isinstance(node.L,Cap) and isinstance(node.R,Cap)
 
 
     def draw(self):
@@ -89,16 +91,14 @@ class Tree:
 
 
 class ParentedBinaryNode(BinaryNode):
-    def __init__(self, info, *args : BinaryNode) -> None:
+    def __init__(self, info, *args) -> None:
         super().__init__(info, *(args[:2]))
-        self.parent = args[2] if len(args)>2 else Cap()
-    @staticmethod
-    def setparent(node,parent):
-        if isinstance(node,Cap):
+        self.parent:ParentedBinaryNode = args[2] if len(args)>2 else Cap()
+    def setparent(self,parent):
+        if isinstance(self,Cap):
             return
         else:
-            node : ParentedBinaryNode
-            node.parent = parent
+            self.parent = parent
     def setl(self,node):
         self.L = node
         self.setparent(self.L, self)
@@ -106,60 +106,81 @@ class ParentedBinaryNode(BinaryNode):
         self.R = node
         self.setparent(self.R, self)
 
+    
+    def rotateL(self):
+        if isinstance(self.R,Cap):
+            return
+        else:
+            child:ParentedBinaryNode = self.R
+            self.R = child.L
+            ParentedBinaryNode.setparent(self.R, self)
+            child.L = self
+            ParentedBinaryNode.setparent(child,self.parent)
+            ParentedBinaryNode.setparent(self,child)
+            parent = child.parent
+            if isinstance(parent,Cap):
+                return
+            if parent.L == self:
+                parent.setl(child)
+            if parent.R == self:
+                parent.setr(child)
+    
+    def rotateR(self):
+        if isinstance(self.L,Cap):
+            return
+        else:
+            child:ParentedBinaryNode = self.L
+            self.L = child.R
+            ParentedBinaryNode.setparent(self.L, self)
+            child.R = self
+            ParentedBinaryNode.setparent(child,self.parent)
+            ParentedBinaryNode.setparent(self,child)
+            parent = child.parent
+            if isinstance(parent,Cap):
+                return
+            if parent.R == self:
+                parent.setr(child)
+            if parent.L == self:
+                parent.setl(child)
+
+
 class ParentTree(Tree):
     def __init__(self) -> None:
         self.nodetype = ParentedBinaryNode
         self.root = ParentedBinaryNode(None)
         self.root.parent = Cap()
+    
+    def replace(self,new_node:ParentedBinaryNode,old_node:ParentedBinaryNode):
+        new_node.setl(old_node.L)
+        new_node.setr(old_node.R)
+        new_node.setparent(old_node.parent)
+        if isinstance(new_node.parent ,Cap):
+            self.root = new_node
+            return
+        if old_node == old_node.parent.L:
+            old_node.parent.L = new_node
+        elif old_node == old_node.parent.R:
+            old_node.parent.R = new_node
+            
 
     def rotateL(self,node):
         try:
             assert isinstance(node,self.nodetype)
         except AssertionError:
             raise TypeError(f"node is not of the tree node type: {type(node)} != {self.nodetype}")
-        
-        if isinstance(node.R,Cap):
-            return
-        else:
-            child:ParentedBinaryNode = node.R
-            node.R = child.L
-            ParentedBinaryNode.setparent(node.R, node)
-            child.L = node
-            ParentedBinaryNode.setparent(child,node.parent)
-            ParentedBinaryNode.setparent(node,child)
-            parent = child.parent
-            if isinstance(parent,Cap):
-                self.root = child
-                return
-            if parent.L == node:
-                parent.setl(child)
-            if parent.R == node:
-                parent.setr(child)
+
+        node.rotateL()
+        if isinstance(node.parent.parent,Cap):
+            self.root = node.parent
         
     def rotateR(self,node):
         try:
             assert isinstance(node,self.nodetype)
         except AssertionError:
             raise TypeError(f"node is not of the tree node type: {type(node)} != {self.nodetype}")
-
-        if isinstance(node.L,Cap):
-            return
-        else:
-            child:ParentedBinaryNode = node.L
-            node.L = child.R
-            ParentedBinaryNode.setparent(node.L, node)
-            child.R = node
-            ParentedBinaryNode.setparent(child,node.parent)
-            ParentedBinaryNode.setparent(node,child)
-            parent = child.parent
-            if isinstance(parent,Cap):
-                self.root = child
-                return
-            if parent.R == node:
-                parent.setr(child)
-            if parent.L == node:
-                parent.setl(child)
-
+        node.rotateR()
+        if isinstance(node.parent.parent,Cap):
+            self.root = node.parent
 
 
 class BalTree(Tree):
@@ -185,7 +206,105 @@ class BalParTree(ParentTree):
                 nodes[((ind+1)>>1)-1].setr(nodes[ind])
         self.root : ParentedBinaryNode = nodes[0]
         self.nodetype = node_type
- 
+
+
+class BST(ParentTree):
+    def __init__(self,insert:List) -> None:
+        self.nodetype = ParentedBinaryNode
+        self.root = ParentedBinaryNode(insert[0])
+
+        self.root.parent = Cap()
+        for val in insert[1:]:
+            self.insert(val)
+    @staticmethod
+    def max(node:ParentedBinaryNode):
+        curr = node
+        while not isinstance(curr.R,Cap):
+            curr =curr.R 
+        return curr
+    @staticmethod 
+    def min(node:ParentedBinaryNode):
+        curr =node
+        while not isinstance(curr.L,Cap):
+            curr = curr.L
+        return curr
+
+    def find(self,key):
+        curr = self.root
+        while not isinstance(curr,Cap):
+            if curr.info[0] > key:
+                curr = curr.L
+            elif curr.info[0]<key: 
+                curr = curr.R
+            else:
+                return curr
+        return curr
+    def succ(self,node:ParentedBinaryNode):
+        if not isinstance(node.R,Cap):
+            return self.min(node.R)
+        else:
+            curr = node
+            parent = curr.parent
+            while not isinstance(parent,Cap) and parent.R == curr:
+                curr = parent
+                parent = parent.parent
+            return parent
+    def pred(self,node:ParentedBinaryNode):
+        if not isinstance(node.L,Cap):
+            return self.min(node.L)
+        else:
+            curr = node
+            parent = curr.parent
+            while not isinstance(parent,Cap) and parent.L == curr:
+                curr = parent
+                parent = parent.parent
+            return parent
+
+    def insert(self,token):
+        """
+        Returns the inserted node
+        """
+        key,_ = token
+        curr = self.root
+        parent = curr.parent
+        while not isinstance(curr,Cap):
+            parent = curr
+            if curr.info[0] > key:
+                curr = curr.L
+            else: 
+                curr = curr.R
+        node = self.nodetype(token)
+        node.parent = parent
+        if isinstance(parent,Cap):
+            self.root = node
+        elif key < parent.info[0]:
+            parent.setl(node)
+        else:
+            parent.setr(node)
+        return node
+    def delete(self,key):
+        node = self.find(key)
+        try:
+            assert not isinstance(node,Cap)
+        except AssertionError:
+            raise ValueError(f"Trying to delete nonexistant node with key {key}")
+        
+        l,r = isinstance(node.L,Cap), isinstance(node.R,Cap) 
+        if self.isleaf(node):
+            self.replace(Cap(),node)
+        elif l and not r:
+            self.replace(node.R,node)
+        elif r and not l:
+            self.replace(node.L,node)
+        else:
+            succ = self.succ(node)
+            if succ.parent != node:
+                self.replace(succ.R,succ)
+                succ.setr(node.R)
+            self.replace(node,succ)
+            succ.setl(node.L)
+
+
 if __name__ == '__main__':
 
     tree = BalParTree(ParentedBinaryNode,[1,2,3,4,5,6,7])

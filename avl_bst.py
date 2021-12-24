@@ -1,36 +1,8 @@
-from unbal_bst import ParentedBinaryNode,ParentTree,Cap
+from tree_obj import ParentedBinaryNode,ParentTree,Cap,BST
 from typing import Any, List
 
 
 
-class BST(ParentTree):
-    def __init__(self,insert:List) -> None:
-        self.nodetype = ParentedBinaryNode
-        self.root = ParentedBinaryNode(insert[0])
-
-        self.root.parent = Cap()
-        for val in insert[1:]:
-            self.insert(val)
-    def insert(self,token):
-        key,val = token
-        curr = self.root
-        parent = curr.parent
-        while not isinstance(curr,Cap):
-            parent = curr
-            if curr.info[0] > key:
-                curr = curr.L
-            else: 
-                curr = curr.R
-        node = ParentedBinaryNode(token)
-        node.parent = parent
-        if isinstance(parent,Cap):
-            self.root = node
-        elif key < parent.info[0]:
-            parent.setl(node)
-        else:
-            parent.setr(node)
-    def delete(self,key):
-        pass
 
 
 class AVLNode(ParentedBinaryNode):
@@ -102,7 +74,7 @@ class AVLNode(ParentedBinaryNode):
 
        
     
-class AVL(ParentTree):
+class AVL(BST):
     def __init__(self, nodes_val) -> None:
         self.root : AVLNode = AVLNode(nodes_val[0])
         for val in nodes_val[1:]:
