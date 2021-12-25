@@ -80,21 +80,30 @@ class Tree:
         layer : List[BinaryNode] = [self.root]
         seen = []
         while layer:
-            print([n if n=="*" else (n.info[0] if key_only else n.info) for n in layer if n not in {None}])
+            print([n if n in {"*","|"} else (n.info[0] if key_only else n.info) for n in layer if n not in {None}])
             new_layer = []
             for n in layer:
-                if n=="*":
+                if n=="*" or n=="|":
                     continue
                 if not isinstance(n.L,Cap):
+                    
+                    if n.L.parent is not n:
+                        raise ValueError(f"The tree has broken parent pointer for {n.info[0]} -L-> {n.L.info[0]} but {n.L.parent.info[0]} <-P- {n.L.info[0]}")
+
                     new_layer.append(n.L)
                 else:
                     new_layer.append("*")
                 if not isinstance(n.R,Cap):
                     new_layer.append(n.R)
+                    
+                    if n.R.parent is not n:
+                        raise ValueError(f"The tree has broken parent pointer for {n.info[0]} -R-> {n.R.info[0]} but {n.R.parent.info[0]} <-P- {n.R.info[0]}")
+
                 else:
                     new_layer.append("*")
                 if n in seen:
                     input(f"the node {n.info} is already drawn, we have a loop")
+                new_layer.append("|")
             seen.extend(layer)
             layer = new_layer
         print("\n")
@@ -183,7 +192,7 @@ class ParentTree(Tree):
             old_node.parent.L = new_node
         elif old_node == old_node.parent.R:
             old_node.parent.R = new_node
-            
+
 
     def rotateL(self,node):
         try:
@@ -251,16 +260,24 @@ class BST(ParentTree):
             curr = curr.L
         return curr
 
-    def find(self,key):
+    def find(self,key,return_path=False):
+        """
+        Finds a node given a key and returns it. Incase the key doesn't exist then return the terminal node where that key should go.
+        """
         curr = self.root
+        path = []
         while not isinstance(curr,Cap):
             if curr.info[0] > key:
                 curr = curr.L
+                if return_path:
+                    path.append('L')
             elif curr.info[0]<key: 
                 curr = curr.R
+                if return_path:
+                    path.append('R')
             else:
-                return curr
-        return curr
+                return curr if not return_path else (curr,path)
+        return curr if not return_path else (curr,path)
     def succ(self,node:ParentedBinaryNode):
         if not isinstance(node.R,Cap):
             return self.min(node.R)
@@ -282,19 +299,24 @@ class BST(ParentTree):
                 parent = parent.parent
             return parent
 
-    def insert(self,token):
+    def insert(self,token,return_path=False):
         """
         Returns the inserted node
         """
         key,_ = token
         curr = self.root
+        path = []
         parent = curr.parent
         while not isinstance(curr,Cap):
             parent = curr
             if curr.info[0] > key:
                 curr = curr.L
+                if return_path:
+                    path.append('L')
             else: 
                 curr = curr.R
+                if return_path:
+                    path.append('R')
         node = self.nodetype(token)
         node.parent = parent
         if isinstance(parent,Cap):
@@ -303,9 +325,9 @@ class BST(ParentTree):
             parent.setl(node)
         else:
             parent.setr(node)
-        return node
-    def delete(self,key):
-        node = self.find(key)
+        return (node,path) if return_path else node
+    def delete(self,key,return_path=False):
+        node,path = self.find(key,return_path=True)
         try:
             assert not isinstance(node,Cap)
         except AssertionError:
@@ -325,7 +347,8 @@ class BST(ParentTree):
                 succ.setr(node.R)
             self.replace_subtree(node,succ)
             succ.setl(node.L)
-
+        if return_path:
+            return node.parent,path[:-1]
 
 if __name__ == '__main__':
     tree = BST([(0,0)])
