@@ -1,6 +1,5 @@
 from typing import List
 from tree_obj import BST, Cap,ParentedBinaryNode
-import tree_obj
 
 
 
@@ -25,7 +24,7 @@ class SplayTree(BST):
         node,path = super().find(key,return_path=True)
         self.splay(node,path)
 
-    def zigzig(self,node:tree_obj.ParentedBinaryNode):
+    def zigzig(self,node:ParentedBinaryNode):
         """
         Performs the zigzig splay, the node is assumed to be in the right format
         """
@@ -71,7 +70,7 @@ class SplayTree(BST):
             else:
                 invnode.setr(node)
 
-    def zigzag(self,node:tree_obj.ParentedBinaryNode):
+    def zigzag(self,node:ParentedBinaryNode):
         """
         Performs the zigzag splay, the node is assumed to be in the right format
         """
@@ -127,7 +126,6 @@ class SplayTree(BST):
             else:
                 self.rotateL(node.parent)
 
-
 if __name__ == '__main__':
     vals = [1,2,3,4,5]
     tree = SplayTree(list(zip(vals,vals)))
@@ -138,6 +136,3 @@ if __name__ == '__main__':
     tree.draw()
     tree.find(1)
     tree.draw()
-    #node = tree.find(1)
-    #tree.zigzig(node)
-    #tree.draw()

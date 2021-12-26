@@ -87,7 +87,7 @@ class Tree:
                     continue
                 if not isinstance(n.L,Cap):
                     
-                    if n.L.parent is not n:
+                    if isinstance(n,ParentedBinaryNode) and n.L.parent is not n:
                         raise ValueError(f"The tree has broken parent pointer for {n.info[0]} -L-> {n.L.info[0]} but {n.L.parent.info[0]} <-P- {n.L.info[0]}")
 
                     new_layer.append(n.L)
@@ -96,7 +96,7 @@ class Tree:
                 if not isinstance(n.R,Cap):
                     new_layer.append(n.R)
                     
-                    if n.R.parent is not n:
+                    if isinstance(n,ParentedBinaryNode) and n.R.parent is not n:
                         raise ValueError(f"The tree has broken parent pointer for {n.info[0]} -R-> {n.R.info[0]} but {n.R.parent.info[0]} <-P- {n.R.info[0]}")
 
                 else:
